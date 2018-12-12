@@ -8,22 +8,23 @@ provider "kafka" {
   skip_tls_verify  = true
 }
 
-resource "kafka_topic" "syslog" {
-  name               = "syslog"
-  replication_factor = 1
-  partitions         = 4
+#resource "kafka_topic" "syslog" {
+#name               = "syslog"
+#replication_factor = 1
+#partitions         = 4
 
-  config = {
-    "segment.ms"   = "4000"
-    "retention.ms" = "86400000"
-  }
-}
+#config = {
+#"segment.ms"   = "4000"
+#"retention.ms" = "86400000"
+#}
+#}
 
 resource "kafka_acl" "test" {
-  resource_name       = "syslog"
-  resource_type       = "Topic"
-  acl_principal       = "User:Alice"
-  acl_host            = "*"
-  acl_operation       = "Write"
-  acl_permission_type = "Deny"
+  resource_name                = "syslog*"
+  resource_type                = "Topic"
+  resource_pattern_type_filter = "prefixed"
+  acl_principal                = "User:Alice"
+  acl_host                     = "*"
+  acl_operation                = "Write"
+  acl_permission_type          = "Allow"
 }

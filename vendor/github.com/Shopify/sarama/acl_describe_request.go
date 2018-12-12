@@ -1,6 +1,7 @@
 package sarama
 
 type DescribeAclsRequest struct {
+	Version int
 	AclFilter
 }
 
@@ -17,9 +18,14 @@ func (d *DescribeAclsRequest) key() int16 {
 }
 
 func (d *DescribeAclsRequest) version() int16 {
-	return 0
+	return int16(d.Version)
 }
 
 func (d *DescribeAclsRequest) requiredVersion() KafkaVersion {
-	return V0_11_0_0
+	switch d.Version {
+	case 1:
+		return V2_0_0_0
+	default:
+		return V0_11_0_0
+	}
 }
