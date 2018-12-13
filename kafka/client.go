@@ -287,31 +287,39 @@ func (c *Client) ListACLs() ([]*sarama.ResourceAcls, error) {
 	}
 	allResources := []*sarama.DescribeAclsRequest{
 		&sarama.DescribeAclsRequest{
+			Version: 1,
 			AclFilter: sarama.AclFilter{
-				ResourceType:   sarama.AclResourceTopic,
-				PermissionType: sarama.AclPermissionAny,
-				Operation:      sarama.AclOperationAny,
+				ResourceType:              sarama.AclResourceTopic,
+				ResourcePatternTypeFilter: sarama.AclPatternAny,
+				PermissionType:            sarama.AclPermissionAny,
+				Operation:                 sarama.AclOperationAny,
 			},
 		},
 		&sarama.DescribeAclsRequest{
+			Version: 1,
 			AclFilter: sarama.AclFilter{
-				ResourceType:   sarama.AclResourceGroup,
-				PermissionType: sarama.AclPermissionAny,
-				Operation:      sarama.AclOperationAny,
+				ResourceType:              sarama.AclResourceGroup,
+				ResourcePatternTypeFilter: sarama.AclPatternAny,
+				PermissionType:            sarama.AclPermissionAny,
+				Operation:                 sarama.AclOperationAny,
 			},
 		},
 		&sarama.DescribeAclsRequest{
+			Version: 1,
 			AclFilter: sarama.AclFilter{
-				ResourceType:   sarama.AclResourceCluster,
-				PermissionType: sarama.AclPermissionAny,
-				Operation:      sarama.AclOperationAny,
+				ResourceType:              sarama.AclResourceCluster,
+				ResourcePatternTypeFilter: sarama.AclPatternAny,
+				PermissionType:            sarama.AclPermissionAny,
+				Operation:                 sarama.AclOperationAny,
 			},
 		},
 		&sarama.DescribeAclsRequest{
+			Version: 1,
 			AclFilter: sarama.AclFilter{
-				ResourceType:   sarama.AclResourceTransactionalID,
-				PermissionType: sarama.AclPermissionAny,
-				Operation:      sarama.AclOperationAny,
+				ResourceType:              sarama.AclResourceTransactionalID,
+				ResourcePatternTypeFilter: sarama.AclPatternAny,
+				PermissionType:            sarama.AclPermissionAny,
+				Operation:                 sarama.AclOperationAny,
 			},
 		},
 	}

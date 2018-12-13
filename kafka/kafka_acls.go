@@ -107,6 +107,12 @@ func (s stringlyTypedACL) AclFilter() (sarama.AclFilter, error) {
 	}
 	f.ResourceType = rType
 
+	patternType := stringToACLPrefix(s.Resource.PatternTypeFilter)
+	if patternType == unknownConversion {
+		return f, fmt.Errorf("Unknown pattern type filter: '%s'", s.Resource.PatternTypeFilter)
+	}
+	f.ResourcePatternTypeFilter = patternType
+
 	return f, nil
 }
 
@@ -116,14 +122,26 @@ func (c *Client) DeleteACL(s stringlyTypedACL) error {
 		return err
 	}
 
+	aclsBeforeDelete, err := c.ListACLs()
+	if err != nil {
+		return fmt.Errorf("Unable to list acls before deleting -- can't be sure we're doing the right thing: %s", err)
+	}
+
+	log.Printf("[INFO] Acls before deletion: %d", len(aclsBeforeDelete))
+	for _, acl := range aclsBeforeDelete {
+		log.Printf("[DEBUG] ACL: %v", acl)
+	}
+
 	filter, err := s.AclFilter()
 	if err != nil {
 		return err
 	}
 
 	req := &sarama.DeleteAclsRequest{
+		Version: 1,
 		Filters: []*sarama.AclFilter{&filter},
 	}
+
 	log.Printf("[INFO] Deleting ACL %v\n", s)
 
 	res, err := broker.DeleteAcls(req)
@@ -131,11 +149,19 @@ func (c *Client) DeleteACL(s stringlyTypedACL) error {
 		return err
 	}
 
+	matchingAclCount := 0
 	for _, r := range res.FilterResponses {
+		log.Printf("Got %d matching Acls", len(r.MatchingAcls))
+		matchingAclCount += len(r.MatchingAcls)
 		if r.Err != sarama.ErrNoError {
 			return r.Err
 		}
 	}
+
+	if matchingAclCount == 0 {
+		return fmt.Errorf("There were no acls matching this filter")
+	}
+
 	return nil
 }
 

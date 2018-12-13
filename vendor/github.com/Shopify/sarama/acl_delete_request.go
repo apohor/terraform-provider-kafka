@@ -11,6 +11,7 @@ func (d *DeleteAclsRequest) encode(pe packetEncoder) error {
 	}
 
 	for _, filter := range d.Filters {
+		filter.Version = d.Version
 		if err := filter.encode(pe); err != nil {
 			return err
 		}

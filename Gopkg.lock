@@ -11,11 +11,11 @@
 
 [[projects]]
   branch = "cm-v1-create-acl-request"
-  digest = "1:ae3d3923ba692733cbd3d20d8f2323d125d2ddefe0da65240ae56255e223bc75"
+  digest = "1:1fb7cff3a5ebc0f518f35873a7e21612fb2a82eda0d0e286c9a9d3464e623e10"
   name = "github.com/Shopify/sarama"
   packages = ["."]
   pruneopts = "NUT"
-  revision = "48f3090284289f7312d92738f4c77640d44c98a7"
+  revision = "2c2353c6a25717858a4458f6d12e118e39c62349"
   source = "github.com/Mongey/sarama"
 
 [[projects]]
