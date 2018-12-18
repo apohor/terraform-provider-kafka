@@ -82,8 +82,6 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		return nil, fmt.Errorf("bootstrap_servers was not set")
 	}
 
-	log.Printf("[DEBUG] configuring provider with Brokers @ %v", brokers)
-
 	config := &Config{
 		BootstrapServers: brokers,
 		CACertFile:       d.Get("ca_cert_file").(string),

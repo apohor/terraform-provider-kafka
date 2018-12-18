@@ -46,7 +46,6 @@ func (c *Config) SASLEnabled() bool {
 }
 
 func NewClient(config *Config) (*Client, error) {
-	log.Printf("[INFO] configuring bootstrap_servers %v", config)
 	bootstrapServers := *(config.BootstrapServers)
 
 	if bootstrapServers == nil {
@@ -94,7 +93,7 @@ func (c *Client) DeleteTopic(t string) error {
 			}
 		}
 	} else {
-		log.Printf("[ERROR] Error deleting topic %s from Kafka\n", err)
+		log.Printf("[ERROR] Error deleting topic %s from Kafka: %s", t, err)
 		return err
 	}
 
