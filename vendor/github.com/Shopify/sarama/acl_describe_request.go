@@ -11,6 +11,8 @@ func (d *DescribeAclsRequest) encode(pe packetEncoder) error {
 }
 
 func (d *DescribeAclsRequest) decode(pd packetDecoder, version int16) (err error) {
+	d.Version = int(version)
+	d.AclFilter.Version = int(version)
 	return d.AclFilter.decode(pd, version)
 }
 

@@ -14,7 +14,6 @@ func (r *Resource) encode(pe packetEncoder, version int) error {
 	}
 
 	if version == 1 {
-		Logger.Printf("Crafting v1 packet %d", r.ResoucePatternType)
 		if r.ResoucePatternType == AclPatternUnknown {
 			Logger.Print("Cannot encode an unknown resource pattern type, using Literal instead")
 			r.ResoucePatternType = AclPatternLiteral

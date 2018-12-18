@@ -21,6 +21,7 @@ func (d *DeleteAclsRequest) encode(pe packetEncoder) error {
 }
 
 func (d *DeleteAclsRequest) decode(pd packetDecoder, version int16) (err error) {
+	d.Version = int(version)
 	n, err := pd.getArrayLength()
 	if err != nil {
 		return err
