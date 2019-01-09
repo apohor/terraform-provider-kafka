@@ -1,11 +1,8 @@
 package kafka
 
 import (
-	"crypto/tls"
-	"crypto/x509"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"time"
@@ -23,28 +20,6 @@ type Client struct {
 	client      sarama.Client
 	kafkaConfig *sarama.Config
 	config      *Config
-}
-
-type Config struct {
-	BootstrapServers *[]string
-	Timeout          int
-	CACert           *x509.Certificate
-	CACertFile       string
-	ClientCert       *tls.Certificate
-	ClientCertFile   string
-	ClientCertKey    string
-	TLSEnabled       bool
-	SkipTLSVerify    bool
-	SASLUsername     string
-	SASLPassword     string
-}
-
-func (c *Config) String() string {
-	return fmt.Sprintf("BootstrapServers: %s\nTimeout: %d,\nTLS: %v,SkipVerify: %v", *c.BootstrapServers, c.Timeout, c.TLSEnabled, c.SkipTLSVerify)
-}
-
-func (c *Config) SASLEnabled() bool {
-	return c.SASLUsername != "" || c.SASLPassword != ""
 }
 
 func NewClient(config *Config) (*Client, error) {
@@ -248,7 +223,7 @@ func (client *Client) ReadTopic(name string) (Topic, error) {
 	return topic, err
 }
 
-func (c *Client) CreateACL(s stringlyTypedACL) error {
+func (c *Client) CreateACL(s StringlyTypedACL) error {
 	broker, err := c.availableBroker()
 	if err != nil {
 		return err
@@ -259,7 +234,7 @@ func (c *Client) CreateACL(s stringlyTypedACL) error {
 		return err
 	}
 	req := &sarama.CreateAclsRequest{
-		Version:      1,
+		Version:      c.aclVersion(),
 		AclCreations: []*sarama.AclCreation{ac},
 	}
 
@@ -288,7 +263,7 @@ func (c *Client) ListACLs() ([]*sarama.ResourceAcls, error) {
 	}
 	allResources := []*sarama.DescribeAclsRequest{
 		&sarama.DescribeAclsRequest{
-			Version: 1,
+			Version: c.aclVersion(),
 			AclFilter: sarama.AclFilter{
 				ResourceType:              sarama.AclResourceTopic,
 				ResourcePatternTypeFilter: sarama.AclPatternAny,
@@ -297,7 +272,7 @@ func (c *Client) ListACLs() ([]*sarama.ResourceAcls, error) {
 			},
 		},
 		&sarama.DescribeAclsRequest{
-			Version: 1,
+			Version: c.aclVersion(),
 			AclFilter: sarama.AclFilter{
 				ResourceType:              sarama.AclResourceGroup,
 				ResourcePatternTypeFilter: sarama.AclPatternAny,
@@ -306,7 +281,7 @@ func (c *Client) ListACLs() ([]*sarama.ResourceAcls, error) {
 			},
 		},
 		&sarama.DescribeAclsRequest{
-			Version: 1,
+			Version: c.aclVersion(),
 			AclFilter: sarama.AclFilter{
 				ResourceType:              sarama.AclResourceCluster,
 				ResourcePatternTypeFilter: sarama.AclPatternAny,
@@ -315,7 +290,7 @@ func (c *Client) ListACLs() ([]*sarama.ResourceAcls, error) {
 			},
 		},
 		&sarama.DescribeAclsRequest{
-			Version: 1,
+			Version: c.aclVersion(),
 			AclFilter: sarama.AclFilter{
 				ResourceType:              sarama.AclResourceTransactionalID,
 				ResourcePatternTypeFilter: sarama.AclPatternAny,
@@ -409,80 +384,12 @@ func (c *Client) availableBroker() (*sarama.Broker, error) {
 	return nil, fmt.Errorf("No Available Brokers @ %v", brokers)
 }
 
-func (c *Config) newKafkaConfig() (*sarama.Config, error) {
-	kafkaConfig := sarama.NewConfig()
-	kafkaConfig.Version = sarama.V2_0_0_0
-	kafkaConfig.ClientID = "terraform-provider-kafka"
-
-	if c.SASLEnabled() {
-		kafkaConfig.Net.SASL.Enable = true
-		kafkaConfig.Net.SASL.Password = c.SASLPassword
-		kafkaConfig.Net.SASL.User = c.SASLUsername
+func (c *Client) aclVersion() int {
+	if c.kafkaConfig.Version.IsAtLeast(sarama.V2_0_0_0) {
+		log.Printf("[DEBUG] Using version 1 for ACL requests; %s", c.kafkaConfig.Version)
+		return 1
 	}
+	log.Printf("[DEBUG] Using version 0 for ACL requests; %s", c.kafkaConfig.Version)
 
-	if c.TLSEnabled {
-		tlsConfig, err := c.newTLSConfig()
-		if err != nil {
-			return kafkaConfig, err
-		}
-
-		kafkaConfig.Net.TLS.Enable = true
-		kafkaConfig.Net.TLS.Config = tlsConfig
-		kafkaConfig.Net.TLS.Config.InsecureSkipVerify = c.SkipTLSVerify
-	}
-
-	return kafkaConfig, nil
-}
-
-func (c *Config) newTLSConfig() (*tls.Config, error) {
-	tlsConfig := &tls.Config{}
-
-	cert, err := c.clientCert()
-	if err != nil {
-		return tlsConfig, err
-	}
-	if cert != nil {
-		tlsConfig.Certificates = []tls.Certificate{*cert}
-	}
-
-	pool, err := c.caCertPool()
-	if err != nil {
-		return tlsConfig, err
-	}
-	if pool != nil {
-		tlsConfig.RootCAs = pool
-	}
-
-	tlsConfig.BuildNameToCertificate()
-
-	return tlsConfig, nil
-}
-
-func (c *Config) clientCert() (*tls.Certificate, error) {
-	if c.ClientCert != nil {
-		return c.ClientCert, nil
-	}
-	if c.ClientCertFile != "" && c.ClientCertKey != "" {
-		cert, err := tls.LoadX509KeyPair(c.ClientCertFile, c.ClientCertKey)
-		if err != nil {
-			return nil, err
-		}
-		return &cert, nil
-	}
-
-	return nil, nil
-}
-
-func (c *Config) caCertPool() (*x509.CertPool, error) {
-	pool := x509.NewCertPool()
-	if c.CACert != nil {
-		pool.AddCert(c.CACert)
-	} else if c.CACertFile == "" {
-		caCert, err := ioutil.ReadFile(c.CACertFile)
-		if err != nil {
-			return nil, err
-		}
-		pool.AppendCertsFromPEM(caCert)
-	}
-	return pool, nil
+	return 0
 }
